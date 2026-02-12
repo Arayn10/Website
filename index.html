@@ -1,0 +1,1384 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClearSkies - Air Pollution Research & Monitoring Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+        #content-wrapper {
+            position: relative;
+            z-index: 1;
+        }
+        .content-section {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            position: relative;
+        }
+        .glass-panel {
+             background: rgba(10, 10, 10, 0.2);
+             backdrop-filter: blur(12px);
+             -webkit-backdrop-filter: blur(12px);
+             border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        #aqi-recommendations ul {
+            list-style-position: inside;
+            padding-left: 0;
+        }
+        #aqi-recommendations li {
+            position: relative;
+            padding-left: 1.5rem; /* Space for the icon */
+            margin-bottom: 0.5rem;
+        }
+        #aqi-recommendations li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: #10b981; /* Emerald green for checkmark */
+            font-weight: bold;
+        }
+        
+        /* CSS for the new navigation bar */
+        #navbar {
+            transition: background-color 0.4s ease-out, top 0.4s ease-out, width 0.4s ease-out, border-radius 0.4s ease-out;
+        }
+        .mobile-menu {
+            transition: transform 0.3s ease-in-out;
+        }
+        
+        /* Hamburger Animation */
+        .hamburger-active .hamburger-line:nth-child(1) {
+            transform: rotate(45deg) translate(5px, 5px);
+        }
+        .hamburger-active .hamburger-line:nth-child(2) {
+            opacity: 0;
+            transform: translateX(20px);
+        }
+        .hamburger-active .hamburger-line:nth-child(3) {
+            transform: rotate(-45deg) translate(7px, -6px);
+        }
+        
+        /* Mobile Translate Styling */
+        .mobile-translate .goog-te-combo {
+            width: 100%;
+            padding: 8px 12px;
+            background-color: rgba(55, 65, 81, 0.8);
+            border: 1px solid rgba(156, 163, 175, 0.3);
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+        }
+        .mobile-translate .goog-te-combo:focus {
+            outline: none;
+            border-color: #10b981;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+        }
+        
+        /* Initial state for scroll animations */
+        .reveal-up {
+            opacity: 1;
+            transform: translateY(0px);
+            transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+        }
+
+        /* Login Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .login-modal {
+            background: rgba(17, 24, 39, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            border-radius: 1.5rem;
+            box-shadow: 
+                0 25px 50px -12px rgba(0, 0, 0, 0.5),
+                0 0 0 1px rgba(16, 185, 129, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            max-width: 400px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            transform: translateY(50px) scale(0.9);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+        }
+
+        .modal-overlay.show .login-modal {
+            transform: translateY(0) scale(1);
+        }
+
+        /* Enhanced form styles for modal */
+        .form-group {
+            position: relative;
+        }
+        
+        .form-input {
+            background: rgba(17, 24, 39, 0.7);
+            border: 2px solid rgba(75, 85, 99, 0.3);
+            border-radius: 0.75rem;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+        }
+        
+        .form-input:focus {
+            border-color: #10B981;
+            background: rgba(17, 24, 39, 0.9);
+            box-shadow: 
+                0 0 0 4px rgba(16, 185, 129, 0.1),
+                0 10px 25px -5px rgba(16, 185, 129, 0.2);
+            transform: translateY(-2px);
+        }
+        
+        .form-label {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #9CA3AF;
+            pointer-events: none;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            background: rgba(17, 24, 39, 0.9);
+            padding: 0 8px;
+            border-radius: 4px;
+        }
+        
+        .form-input:focus + .form-label,
+        .form-input:not(:placeholder-shown) + .form-label {
+            top: 0;
+            left: 12px;
+            font-size: 0.75rem;
+            color: #10B981;
+            background: rgba(17, 24, 39, 1);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #10B981, #059669);
+            border: none;
+            border-radius: 0.75rem;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.6s;
+        }
+        
+        .btn-primary:hover::before {
+            left: 100%;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 
+                0 10px 25px -5px rgba(16, 185, 129, 0.4),
+                0 20px 40px -10px rgba(16, 185, 129, 0.2);
+        }
+        
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-skip {
+            background: rgba(75, 85, 99, 0.2);
+            border: 1px solid rgba(75, 85, 99, 0.3);
+            border-radius: 0.75rem;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .btn-skip:hover {
+            background: rgba(75, 85, 99, 0.4);
+            border-color: rgba(75, 85, 99, 0.5);
+            transform: translateY(-1px);
+        }
+        
+        .loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .checkbox-custom {
+            position: relative;
+        }
+        
+        .checkbox-custom input[type="checkbox"] {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(75, 85, 99, 0.5);
+            border-radius: 4px;
+            background: transparent;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .checkbox-custom input[type="checkbox"]:checked {
+            background: #10B981;
+            border-color: #10B981;
+        }
+        
+        .checkbox-custom input[type="checkbox"]:checked::before {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 12px;
+        }
+
+        .message {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+        }
+        
+        .message.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .message.success {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #10B981;
+        }
+        
+        .message.error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #EF4444;
+        }
+
+        .fade-in-up {
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .form-animation-delay-1 { animation-delay: 0.1s; }
+        .form-animation-delay-2 { animation-delay: 0.2s; }
+        .form-animation-delay-3 { animation-delay: 0.3s; }
+        .form-animation-delay-4 { animation-delay: 0.4s; }
+        .form-animation-delay-5 { animation-delay: 0.5s; }
+    </style>
+</head>
+<body class="bg-gray-900 text-white">
+
+    <!-- Canvas for 3D background -->
+    <canvas id="bg-canvas"></canvas>
+
+    <!-- NEW Integrated Glass Navigation Bar -->
+    <nav id="navbar" class="fixed top-6 left-1/2 -translate-x-1/2 w-[95%] max-w-5xl z-50 rounded-full border border-white/10 bg-black/20 shadow-2xl shadow-black/20 backdrop-blur-lg">
+        <div class="mx-auto px-6">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo -->
+                 <a href="index.html" class="flex items-center space-x-2">
+                    <i data-lucide="sprout" class="text-emerald-400 w-7 h-7"></i>
+                    <span class="text-2xl font-bold text-white">ClearSkies</span>
+                </a>
+
+                <!-- Desktop Menu -->
+                <div class="hidden md:flex items-center space-x-2">
+                    <a href="index.html" class="px-4 py-2 text-emerald-400 font-bold transition-colors duration-300">Home</a>
+                    <a href="dashboard.html" class="px-4 py-2 text-gray-300 hover:text-emerald-400 transition-colors duration-300">Dashboard</a>
+                    <a href="features.html" class="px-4 py-2 text-gray-300 hover:text-emerald-400 transition-colors duration-300">Features</a>
+                    <a href="how-it-works.html" class="px-4 py-2 text-gray-300 hover:text-emerald-400 transition-colors duration-300">How It Works</a>
+                    <a href="contact.html" class="px-4 py-2 text-gray-300 hover:text-emerald-400 transition-colors duration-300">Contact</a>
+                    <div id="google_translate_element" class="ml-2"></div>
+                    
+                </div>
+
+                <!-- Mobile Menu Button -->
+                <div class="md:hidden flex items-center">
+                    <button id="mobile-menu-button" class="relative p-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-opacity-50 rounded-lg transition-all duration-200 hover:bg-white/10">
+                        <div class="w-6 h-6 flex flex-col justify-center items-center">
+                            <span class="hamburger-line block h-0.5 w-6 bg-current transform transition-all duration-300 ease-in-out"></span>
+                            <span class="hamburger-line block h-0.5 w-6 bg-current transform transition-all duration-300 ease-in-out mt-1"></span>
+                            <span class="hamburger-line block h-0.5 w-6 bg-current transform transition-all duration-300 ease-in-out mt-1"></span>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="md:hidden fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-gray-900/98 backdrop-blur-xl z-50 flex flex-col transform translate-x-full transition-transform duration-300 ease-in-out hidden border-l border-gray-700/50 shadow-2xl">
+            <!-- Mobile Menu Header -->
+            <div class="flex justify-between items-center p-6 border-b border-gray-700/50">
+                <div class="flex items-center space-x-2">
+                    <i data-lucide="sprout" class="text-emerald-400 w-6 h-6"></i>
+                    <span class="text-xl font-bold text-white">ClearSkies</span>
+                </div>
+                <button id="mobile-menu-close" class="p-2 hover:bg-gray-800/50 rounded-xl transition-all duration-200 hover:scale-105">
+                    <i data-lucide="x" class="w-6 h-6 text-gray-300"></i>
+                </button>
+            </div>
+            
+            <!-- Mobile Menu Content -->
+            <div class="flex-1 overflow-y-auto px-6 py-4">
+                <!-- Navigation Links -->
+                <div class="space-y-2 mb-6">
+                    <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Navigation</h3>
+                    <a href="index.html" class="flex items-center py-3 px-4 text-emerald-400 font-semibold bg-emerald-500/10 rounded-xl transition-all duration-200">
+                        <i data-lucide="home" class="w-5 h-5 mr-3"></i>
+                        <span>Home</span>
+                    </a>
+                    <a href="features.html" class="flex items-center py-3 px-4 text-gray-300 hover:text-emerald-400 hover:bg-gray-800/50 rounded-xl transition-all duration-200">
+                        <i data-lucide="zap" class="w-5 h-5 mr-3"></i>
+                        <span>Features</span>
+                    </a>
+                    <a href="how-it-works.html" class="flex items-center py-3 px-4 text-gray-300 hover:text-emerald-400 hover:bg-gray-800/50 rounded-xl transition-all duration-200">
+                        <i data-lucide="info" class="w-5 h-5 mr-3"></i>
+                        <span>How It Works</span>
+                    </a>
+                    <a href="dashboard.html" class="flex items-center py-3 px-4 text-gray-300 hover:text-emerald-400 hover:bg-gray-800/50 rounded-xl transition-all duration-200">
+                        <i data-lucide="bar-chart-3" class="w-5 h-5 mr-3"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="contact.html" class="flex items-center py-3 px-4 text-gray-300 hover:text-emerald-400 hover:bg-gray-800/50 rounded-xl transition-all duration-200">
+                        <i data-lucide="mail" class="w-5 h-5 mr-3"></i>
+                        <span>Contact</span>
+                    </a>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="space-y-3 mb-6">
+                    <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Actions</h3>
+                    <button id="login-btn-mobile" class="w-full flex items-center justify-center py-3 px-4 bg-blue-500 hover:bg-blue-600 text-white rounded-xl transition-all duration-200 font-medium">
+                        <i data-lucide="user" class="w-5 h-5 mr-2"></i>
+                        <span>Login</span>
+                    </button>
+                    <button id="install-pwa" class="install-button hidden w-full flex items-center justify-center py-3 px-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl transition-all duration-200 font-medium">
+                        <i data-lucide="download" class="w-5 h-5 mr-2"></i>
+                        <span>Install App</span>
+                    </button>
+                </div>
+
+                <!-- Google Translate -->
+                <div class="border-t border-gray-700/50 pt-4">
+                    <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Language</h3>
+                    <div id="google_translate_element_mobile" class="mobile-translate"></div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Login Modal -->
+    <div id="login-modal-overlay" class="modal-overlay">
+        <div class="login-modal p-8">
+            <!-- Close Button -->
+            <button id="close-modal-btn" class="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+
+            <!-- Modal Header -->
+            <div class="text-center mb-8 fade-in-up">
+                <div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-2xl flex items-center justify-center">
+                    <i data-lucide="shield-check" class="w-8 h-8 text-white"></i>
+                </div>
+                <h2 class="text-3xl font-bold bg-gradient-to-r from-emerald-400 to-emerald-600 bg-clip-text text-transparent mb-2">Welcome Back</h2>
+                <p class="text-gray-300">Sign in to access your personalized dashboard</p>
+            </div>
+            
+            <div id="modal-message-container"></div>
+            
+            <!-- Login Form -->
+            <form id="modal-login-form" class="space-y-6">
+                <div class="form-group fade-in-up form-animation-delay-1">
+                    <input type="email" 
+                           id="modal-email" 
+                           name="email" 
+                           required 
+                           placeholder=" "
+                           class="form-input w-full px-4 py-4 text-white focus:outline-none">
+                    <label for="modal-email" class="form-label">Email Address</label>
+                </div>
+                
+                <div class="form-group fade-in-up form-animation-delay-2">
+                    <input type="password" 
+                           id="modal-password" 
+                           name="password" 
+                           required 
+                           placeholder=" "
+                           class="form-input w-full px-4 py-4 text-white focus:outline-none">
+                    <label for="modal-password" class="form-label">Password</label>
+                    <div class="absolute right-4 top-1/2 transform -translate-y-1/2">
+                        <button type="button" id="modal-toggle-password" class="text-gray-400 hover:text-emerald-400 transition-colors">
+                            <i data-lucide="eye" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="flex items-center justify-between fade-in-up form-animation-delay-3">
+                    <div class="checkbox-custom flex items-center">
+                        <input type="checkbox" id="modal-remember" name="remember" class="mr-3">
+                        <label for="modal-remember" class="text-sm text-gray-300 cursor-pointer">Remember me</label>
+                    </div>
+                    <a href="#" class="text-sm text-emerald-400 hover:text-emerald-300 transition-colors">Forgot password?</a>
+                </div>
+                
+                <div class="space-y-3 fade-in-up form-animation-delay-4">
+                    <button type="submit" 
+                            id="modal-login-button"
+                            class="btn-primary w-full py-4 text-white font-semibold flex items-center justify-center space-x-2">
+                        <span id="modal-login-text">Sign In</span>
+                        <div id="modal-loading-spinner" class="loading-spinner hidden"></div>
+                        <i id="modal-login-icon" data-lucide="arrow-right" class="w-5 h-5"></i>
+                    </button>
+                    
+                    <button type="button" 
+                            id="skip-login-btn"
+                            class="btn-skip w-full py-3 text-gray-300 font-medium flex items-center justify-center space-x-2">
+                        <i data-lucide="skip-forward" class="w-5 h-5"></i>
+                        <span>Skip for now</span>
+                    </button>
+                </div>
+                
+                <div class="relative fade-in-up form-animation-delay-5">
+                    <div class="absolute inset-0 flex items-center">
+                        <div class="w-full border-t border-gray-600"></div>
+                    </div>
+                    <div class="relative flex justify-center text-sm">
+                        <span class="px-4 bg-gray-900 text-gray-400">Or continue with</span>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4 fade-in-up form-animation-delay-5">
+                    <button type="button" class="social-login-btn flex items-center justify-center px-4 py-3 border border-gray-600 rounded-lg hover:border-emerald-500 hover:bg-gray-800 transition-colors">
+                        <svg class="w-5 h-5 mr-2" viewBox="0 0 24 24">
+                            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                        </svg>
+                        <span class="text-sm font-medium text-gray-300">Google</span>
+                    </button>
+                    <button type="button" class="social-login-btn flex items-center justify-center px-4 py-3 border border-gray-600 rounded-lg hover:border-emerald-500 hover:bg-gray-800 transition-colors">
+                        <svg class="w-5 h-5 mr-2 text-gray-300" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z"/>
+                        </svg>
+                        <span class="text-sm font-medium text-gray-300">Twitter</span>
+                    </button>
+                </div>
+                
+                <div class="text-center text-sm text-gray-400 fade-in-up form-animation-delay-5">
+                    Don't have an account? 
+                    <a href="#" id="modal-signup-link" class="text-emerald-400 hover:text-emerald-300 font-medium transition-colors">Create one now</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Content Wrapper -->
+    <div id="content-wrapper">
+        <!-- Hero Section -->
+        <section id="hero" class="content-section text-center pt-32">
+            <h2 class="text-4xl md:text-6xl font-black tracking-wider mb-6 bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">Air Quality Visualize</h2>
+            <p class="text-lg md:text-xl max-w-4xl mx-auto mb-8 text-gray-300">Understanding the critical impact of air pollution on global health through comprehensive environmental monitoring and scientific research.</p>
+            
+            <!-- Air Pollution Study Brief -->
+            <div class="glass-panel p-6 md:p-8 rounded-2xl max-w-6xl w-full mb-12 text-left">
+                <h3 class="text-2xl md:text-3xl font-bold mb-6 text-center reveal-up">The Science Behind Air Pollution</h3>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                    <!-- Left Column: Key Statistics -->
+                    <div class="reveal-up">
+                        <h4 class="text-xl font-semibold mb-4 text-emerald-400">Critical Research Findings</h4>
+                        <div class="space-y-4">
+                            <div class="bg-gray-800/50 p-4 rounded-lg">
+                                <div class="flex items-center mb-2">
+                                    <i data-lucide="alert-triangle" class="w-5 h-5 text-red-400 mr-2"></i>
+                                    <span class="font-semibold">7 Million Deaths Annually</span>
+                                </div>
+                                <p class="text-sm text-gray-300">WHO studies show air pollution causes approximately 7 million premature deaths worldwide each year.</p>
+                            </div>
+                            
+                            <div class="bg-gray-800/50 p-4 rounded-lg">
+                                <div class="flex items-center mb-2">
+                                    <i data-lucide="activity" class="w-5 h-5 text-orange-400 mr-2"></i>
+                                    <span class="font-semibold">91% Global Population</span>
+                                </div>
+                                <p class="text-sm text-gray-300">Research indicates 91% of the world's population lives in areas where air quality exceeds WHO guidelines.</p>
+                            </div>
+                            
+                            <div class="bg-gray-800/50 p-4 rounded-lg">
+                                <div class="flex items-center mb-2">
+                                    <i data-lucide="heart-pulse" class="w-5 h-5 text-blue-400 mr-2"></i>
+                                    <span class="font-semibold">Cardiovascular Impact</span>
+                                </div>
+                                <p class="text-sm text-gray-300">Studies show PM2.5 exposure increases cardiovascular disease risk by 20-25% per 10 μg/m³ increase.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Right Column: Pollution Sources -->
+                    <div class="reveal-up" style="--reveal-delay: 0.2s;">
+                        <h4 class="text-xl font-semibold mb-4 text-emerald-400">Major Pollution Sources</h4>
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between bg-gray-800/30 p-3 rounded-lg">
+                                <div class="flex items-center">
+                                    <i data-lucide="car" class="w-5 h-5 text-red-400 mr-3"></i>
+                                    <span>Transportation</span>
+                                </div>
+                                <span class="text-red-400 font-semibold">29%</span>
+                            </div>
+                            
+                            <div class="flex items-center justify-between bg-gray-800/30 p-3 rounded-lg">
+                                <div class="flex items-center">
+                                    <i data-lucide="factory" class="w-5 h-5 text-orange-400 mr-3"></i>
+                                    <span>Industrial</span>
+                                </div>
+                                <span class="text-orange-400 font-semibold">21%</span>
+                            </div>
+                            
+                            <div class="flex items-center justify-between bg-gray-800/30 p-3 rounded-lg">
+                                <div class="flex items-center">
+                                    <i data-lucide="zap" class="w-5 h-5 text-yellow-400 mr-3"></i>
+                                    <span>Energy Production</span>
+                                </div>
+                                <span class="text-yellow-400 font-semibold">25%</span>
+                            </div>
+                            
+                            <div class="flex items-center justify-between bg-gray-800/30 p-3 rounded-lg">
+                                <div class="flex items-center">
+                                    <i data-lucide="home" class="w-5 h-5 text-green-400 mr-3"></i>
+                                    <span>Residential</span>
+                                </div>
+                                <span class="text-green-400 font-semibold">12%</span>
+                            </div>
+                            
+                            <div class="flex items-center justify-between bg-gray-800/30 p-3 rounded-lg">
+                                <div class="flex items-center">
+                                    <i data-lucide="wind" class="w-5 h-5 text-blue-400 mr-3"></i>
+                                    <span>Natural Sources</span>
+                                </div>
+                                <span class="text-blue-400 font-semibold">13%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Health Impact Studies -->
+                <div class="mb-8 reveal-up" style="--reveal-delay: 0.4s;">
+                    <h4 class="text-xl font-semibold mb-4 text-emerald-400 text-center">Recent Scientific Studies</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="bg-gray-800/50 p-4 rounded-lg text-center">
+                            <i data-lucide="brain" class="w-8 h-8 text-purple-400 mx-auto mb-3"></i>
+                            <h5 class="font-semibold mb-2">Cognitive Impact</h5>
+                            <p class="text-sm text-gray-300">Harvard study (2023) links long-term PM2.5 exposure to 15% increased dementia risk.</p>
+                        </div>
+                        
+                        <div class="bg-gray-800/50 p-4 rounded-lg text-center">
+                            <i data-lucide="baby" class="w-8 h-8 text-pink-400 mx-auto mb-3"></i>
+                            <h5 class="font-semibold mb-2">Child Development</h5>
+                            <p class="text-sm text-gray-300">UNICEF research shows air pollution affects brain development in 17 million infants globally.</p>
+                        </div>
+                        
+                        <div class="bg-gray-800/50 p-4 rounded-lg text-center">
+                            <i data-lucide="dollar-sign" class="w-8 h-8 text-green-400 mx-auto mb-3"></i>
+                            <h5 class="font-semibold mb-2">Economic Cost</h5>
+                            <p class="text-sm text-gray-300">World Bank estimates global air pollution costs $5.7 trillion annually in welfare losses.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Call to Action -->
+                <div class="text-center reveal-up" style="--reveal-delay: 0.6s;">
+                    <h4 class="text-xl font-semibold mb-4 text-emerald-400">Explore Air Quality Dashboard</h4>
+                    <p class="text-gray-300 mb-6">Access our comprehensive research findings and learn how air pollution affects your community and global health.</p>
+                    
+                    <div class="flex flex-col sm:flex-row gap-4 justify-center max-w-md mx-auto">
+                        <a href="dashboard.html" class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-6 rounded-lg transition-all transform hover:scale-105 text-center">
+                            View Dashboard
+                        </a>
+                        
+                    </div>
+                </div>
+            </div>
+            
+           
+            
+            <!-- Comprehensive Air Pollution Information -->
+            <div class="glass-panel p-6 md:p-8 rounded-2xl max-w-6xl w-full mt-8 text-left">
+                <h3 class="text-2xl md:text-3xl font-bold mb-8 text-center reveal-up">Understanding Air Pollution: A Global Crisis</h3>
+                
+                <!-- What is Air Pollution Section -->
+                <div class="mb-8 reveal-up">
+                    <h4 class="text-xl font-semibold mb-4 text-emerald-400">What is Air Pollution?</h4>
+                    <div class="bg-gray-800/30 p-6 rounded-lg mb-6">
+                        <p class="text-gray-200 mb-4 leading-relaxed">
+                            Air pollution refers to the contamination of the atmosphere by harmful substances that pose risks to human health, wildlife, and the environment. These pollutants can be in the form of solid particles, liquid droplets, or gases, and they come from both natural sources (like volcanic eruptions and wildfires) and human activities (such as burning fossil fuels, industrial processes, and transportation).
+                        </p>
+                        <p class="text-gray-200 leading-relaxed">
+                            The World Health Organization defines air pollution as the contamination of indoor or outdoor air by any chemical, physical, or biological agent that modifies the natural characteristics of the atmosphere. When we breathe polluted air, these harmful substances enter our respiratory system and can cause immediate and long-term health effects.
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- Types of Air Pollutants -->
+                <div class="mb-8 reveal-up" style="--reveal-delay: 0.2s;">
+                    <h4 class="text-xl font-semibold mb-4 text-emerald-400">Primary vs Secondary Pollutants</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-gray-800/40 p-5 rounded-lg">
+                            <h5 class="font-semibold mb-3 text-red-400 flex items-center">
+                                <i data-lucide="arrow-right" class="w-5 h-5 mr-2"></i>
+                                Primary Pollutants
+                            </h5>
+                            <p class="text-gray-200 mb-3">Emitted directly into the atmosphere from identifiable sources:</p>
+                            <ul class="text-sm text-gray-300 space-y-2">
+                                <li class="flex items-start">
+                                    <span class="w-2 h-2 bg-red-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                                    <span><strong>Carbon Monoxide (CO):</strong> From vehicle exhaust and incomplete combustion</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="w-2 h-2 bg-red-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                                    <span><strong>Sulfur Dioxide (SO₂):</strong> From coal burning and industrial processes</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="w-2 h-2 bg-red-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                                    <span><strong>Nitrogen Oxides (NOₓ):</strong> From vehicle engines and power plants</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="w-2 h-2 bg-red-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                                    <span><strong>Particulate Matter:</strong> Dust, soot, and smoke particles</span>
+                                </li>
+                            </ul>
+                        </div>
+                        
+                        <div class="bg-gray-800/40 p-5 rounded-lg">
+                            <h5 class="font-semibold mb-3 text-orange-400 flex items-center">
+                                <i data-lucide="refresh-cw" class="w-5 h-5 mr-2"></i>
+                                Secondary Pollutants
+                            </h5>
+                            <p class="text-gray-200 mb-3">Formed through chemical reactions between primary pollutants:</p>
+                            <ul class="text-sm text-gray-300 space-y-2">
+                                <li class="flex items-start">
+                                    <span class="w-2 h-2 bg-orange-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                                    <span><strong>Ground-level Ozone (O₃):</strong> Formed when NOₓ and VOCs react in sunlight</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="w-2 h-2 bg-orange-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                                    <span><strong>Acid Rain:</strong> Forms when SO₂ and NOₓ combine with water vapor</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="w-2 h-2 bg-orange-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                                    <span><strong>Secondary PM:</strong> Fine particles formed from gas-to-particle conversion</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="w-2 h-2 bg-orange-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                                    <span><strong>Smog:</strong> Complex mixture of pollutants in urban areas</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Health Impacts Section -->
+                <div class="mb-8 reveal-up" style="--reveal-delay: 0.4s;">
+                    <h4 class="text-xl font-semibold mb-4 text-emerald-400">Health Impacts of Air Pollution</h4>
+                    <div class="bg-gray-800/30 p-6 rounded-lg mb-4">
+                        <p class="text-gray-200 mb-4 leading-relaxed">
+                            Air pollution is one of the world's largest environmental health risks, affecting virtually every organ in the human body. The health impacts range from minor irritations to serious chronic diseases and premature death.
+                        </p>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Short-term Effects -->
+                        <div class="bg-gray-800/40 p-5 rounded-lg">
+                            <h5 class="font-semibold mb-3 text-yellow-400 flex items-center">
+                                <i data-lucide="clock" class="w-5 h-5 mr-2"></i>
+                                Short-term Effects (Hours to Days)
+                            </h5>
+                            <ul class="text-sm text-gray-300 space-y-2">
+                                <li>• Eye, nose, and throat irritation</li>
+                                <li>• Coughing and sneezing</li>
+                                <li>• Shortness of breath</li>
+                                <li>• Headaches and fatigue</li>
+                                <li>• Worsening of asthma symptoms</li>
+                                <li>• Respiratory infections</li>
+                            </ul>
+                        </div>
+                        
+                        <!-- Long-term Effects -->
+                        <div class="bg-gray-800/40 p-5 rounded-lg">
+                            <h5 class="font-semibold mb-3 text-red-400 flex items-center">
+                                <i data-lucide="calendar" class="w-5 h-5 mr-2"></i>
+                                Long-term Effects (Months to Years)
+                            </h5>
+                            <ul class="text-sm text-gray-300 space-y-2">
+                                <li>• Chronic respiratory diseases</li>
+                                <li>• Heart disease and stroke</li>
+                                <li>• Lung cancer</li>
+                                <li>• Reduced lung function</li>
+                                <li>• Premature aging of lungs</li>
+                                <li>• Increased mortality risk</li>
+                            </ul>
+                        </div>
+                        
+                        <!-- Vulnerable Groups -->
+                        <div class="bg-gray-800/40 p-5 rounded-lg">
+                            <h5 class="font-semibold mb-3 text-blue-400 flex items-center">
+                                <i data-lucide="users" class="w-5 h-5 mr-2"></i>
+                                Most Vulnerable Groups
+                            </h5>
+                            <ul class="text-sm text-gray-300 space-y-2">
+                                <li>• Children under 5 years</li>
+                                <li>• Adults over 65 years</li>
+                                <li>• Pregnant women</li>
+                                <li>• People with asthma/COPD</li>
+                                <li>• Individuals with heart disease</li>
+                                <li>• Outdoor workers</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Environmental Impact -->
+                <div class="mb-8 reveal-up" style="--reveal-delay: 0.6s;">
+                    <h4 class="text-xl font-semibold mb-4 text-emerald-400">Environmental Consequences</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-gray-800/30 p-5 rounded-lg">
+                            <h5 class="font-semibold mb-3 text-green-400">Ecosystem Damage</h5>
+                            <ul class="text-sm text-gray-300 space-y-2">
+                                <li class="flex items-start">
+                                    <i data-lucide="tree-pine" class="w-4 h-4 mt-1 mr-2 text-green-400 flex-shrink-0"></i>
+                                    <span>Acid rain damages forests and soil chemistry</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i data-lucide="droplets" class="w-4 h-4 mt-1 mr-2 text-blue-400 flex-shrink-0"></i>
+                                    <span>Water body acidification affects aquatic life</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i data-lucide="leaf" class="w-4 h-4 mt-1 mr-2 text-yellow-400 flex-shrink-0"></i>
+                                    <span>Ozone reduces crop yields and plant growth</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i data-lucide="bug" class="w-4 h-4 mt-1 mr-2 text-purple-400 flex-shrink-0"></i>
+                                    <span>Biodiversity loss due to habitat degradation</span>
+                                </li>
+                            </ul>
+                        </div>
+                        
+                        <div class="bg-gray-800/30 p-5 rounded-lg">
+                            <h5 class="font-semibold mb-3 text-orange-400">Climate Effects</h5>
+                            <ul class="text-sm text-gray-300 space-y-2">
+                                <li class="flex items-start">
+                                    <i data-lucide="thermometer" class="w-4 h-4 mt-1 mr-2 text-red-400 flex-shrink-0"></i>
+                                    <span>Greenhouse gases contribute to global warming</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i data-lucide="cloud-rain" class="w-4 h-4 mt-1 mr-2 text-gray-400 flex-shrink-0"></i>
+                                    <span>Aerosols affect precipitation patterns</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i data-lucide="snowflake" class="w-4 h-4 mt-1 mr-2 text-cyan-400 flex-shrink-0"></i>
+                                    <span>Black carbon accelerates ice cap melting</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i data-lucide="wind" class="w-4 h-4 mt-1 mr-2 text-teal-400 flex-shrink-0"></i>
+                                    <span>Altered atmospheric circulation patterns</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Solutions and Prevention -->
+                <div class="reveal-up" style="--reveal-delay: 0.8s;">
+                    <h4 class="text-xl font-semibold mb-4 text-emerald-400">Solutions and Prevention Strategies</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="bg-gradient-to-br from-emerald-500/20 to-emerald-600/20 p-4 rounded-lg border border-emerald-500/30">
+                            <i data-lucide="zap" class="w-8 h-8 text-emerald-400 mb-3"></i>
+                            <h5 class="font-semibold mb-2 text-emerald-300">Clean Energy</h5>
+                            <p class="text-xs text-gray-300">Transition to renewable energy sources like solar, wind, and hydroelectric power</p>
+                        </div>
+                        
+                        <div class="bg-gradient-to-br from-blue-500/20 to-blue-600/20 p-4 rounded-lg border border-blue-500/30">
+                            <i data-lucide="car" class="w-8 h-8 text-blue-400 mb-3"></i>
+                            <h5 class="font-semibold mb-2 text-blue-300">Sustainable Transport</h5>
+                            <p class="text-xs text-gray-300">Electric vehicles, public transit, cycling, and walking reduce emissions</p>
+                        </div>
+                        
+                        <div class="bg-gradient-to-br from-green-500/20 to-green-600/20 p-4 rounded-lg border border-green-500/30">
+                            <i data-lucide="recycle" class="w-8 h-8 text-green-400 mb-3"></i>
+                            <h5 class="font-semibold mb-2 text-green-300">Waste Management</h5>
+                            <p class="text-xs text-gray-300">Proper recycling and waste reduction minimize burning and landfill emissions</p>
+                        </div>
+                        
+                        <div class="bg-gradient-to-br from-purple-500/20 to-purple-600/20 p-4 rounded-lg border border-purple-500/30">
+                            <i data-lucide="gavel" class="w-8 h-8 text-purple-400 mb-3"></i>
+                            <h5 class="font-semibold mb-2 text-purple-300">Policy & Regulation</h5>
+                            <p class="text-xs text-gray-300">Strong environmental laws and emission standards for industries</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6 bg-gray-800/30 p-5 rounded-lg">
+                        <h5 class="font-semibold mb-3 text-emerald-400 flex items-center">
+                            <i data-lucide="lightbulb" class="w-5 h-5 mr-2"></i>
+                            Individual Actions You Can Take
+                        </h5>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <ul class="text-sm text-gray-300 space-y-1">
+                                <li>• Use public transportation or carpool</li>
+                                <li>• Choose energy-efficient appliances</li>
+                                <li>• Reduce, reuse, and recycle</li>
+                                <li>• Plant trees and maintain gardens</li>
+                            </ul>
+                            <ul class="text-sm text-gray-300 space-y-1">
+                                <li>• Avoid burning waste or leaves</li>
+                                <li>• Use eco-friendly products</li>
+                                <li>• Support clean energy initiatives</li>
+                                <li>• Stay informed and advocate for change</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>>
+    
+
+    <!-- Three.js and GSAP for animations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/ScrollTrigger.min.js"></script>
+    
+    <!-- Login Script -->
+    <script src="/login.js" defer></script>
+    
+    <!-- Login Modal Script -->
+    <script>
+        // Login Modal Functionality
+        document.addEventListener('DOMContentLoaded', () => {
+            const loginModalOverlay = document.getElementById('login-modal-overlay');
+            const closeModalBtn = document.getElementById('close-modal-btn');
+            const skipLoginBtn = document.getElementById('skip-login-btn');
+            const loginBtns = document.querySelectorAll('#login-btn, #login-btn-mobile');
+            const modalLoginForm = document.getElementById('modal-login-form');
+            const modalTogglePassword = document.getElementById('modal-toggle-password');
+            const modalPasswordInput = document.getElementById('modal-password');
+            const modalMessageContainer = document.getElementById('modal-message-container');
+            
+            // Modal control functions
+            function openModal() {
+                loginModalOverlay.classList.add('show');
+                document.body.style.overflow = 'hidden';
+                
+                // Animate form elements
+                const formElements = modalLoginForm.querySelectorAll('.fade-in-up');
+                formElements.forEach((el, index) => {
+                    el.style.animationDelay = `${index * 0.1}s`;
+                });
+            }
+            
+            function closeModal() {
+                loginModalOverlay.classList.remove('show');
+                document.body.style.overflow = 'auto';
+                
+                // Clear form
+                modalLoginForm.reset();
+                modalMessageContainer.innerHTML = '';
+                
+                // Reset password field type
+                modalPasswordInput.setAttribute('type', 'password');
+                const icon = modalTogglePassword.querySelector('i');
+                icon.setAttribute('data-lucide', 'eye');
+                lucide.createIcons();
+            }
+            
+            // Event listeners for opening modal
+            loginBtns.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    openModal();
+                });
+            });
+            
+            // Event listeners for closing modal
+            closeModalBtn.addEventListener('click', closeModal);
+            skipLoginBtn.addEventListener('click', closeModal);
+            
+            // Close modal when clicking overlay
+            loginModalOverlay.addEventListener('click', (e) => {
+                if (e.target === loginModalOverlay) {
+                    closeModal();
+                }
+            });
+            
+            // Close modal with Escape key
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && loginModalOverlay.classList.contains('show')) {
+                    closeModal();
+                }
+            });
+            
+            // Password toggle functionality
+            modalTogglePassword.addEventListener('click', () => {
+                const type = modalPasswordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                modalPasswordInput.setAttribute('type', type);
+                
+                const icon = modalTogglePassword.querySelector('i');
+                if (type === 'password') {
+                    icon.setAttribute('data-lucide', 'eye');
+                } else {
+                    icon.setAttribute('data-lucide', 'eye-off');
+                }
+                lucide.createIcons();
+            });
+            
+            // Show message function
+            function showModalMessage(message, type = 'success') {
+                const messageEl = document.createElement('div');
+                messageEl.className = `message ${type}`;
+                messageEl.textContent = message;
+                modalMessageContainer.innerHTML = '';
+                modalMessageContainer.appendChild(messageEl);
+                
+                setTimeout(() => messageEl.classList.add('show'), 100);
+                
+                setTimeout(() => {
+                    messageEl.classList.remove('show');
+                    setTimeout(() => modalMessageContainer.innerHTML = '', 300);
+                }, 5000);
+            }
+            
+            // Form validation
+            function validateModalForm(email, password) {
+                const errors = [];
+                
+                if (!email) {
+                    errors.push('Email is required');
+                } else if (!/\S+@\S+\.\S+/.test(email)) {
+                    errors.push('Please enter a valid email address');
+                }
+                
+                if (!password) {
+                    errors.push('Password is required');
+                } else if (password.length < 6) {
+                    errors.push('Password must be at least 6 characters long');
+                }
+                
+                return errors;
+            }
+            
+            // Loading state management
+            function setModalLoadingState(isLoading) {
+                const loginButton = document.getElementById('modal-login-button');
+                const loginText = document.getElementById('modal-login-text');
+                const loginIcon = document.getElementById('modal-login-icon');
+                const loadingSpinner = document.getElementById('modal-loading-spinner');
+                
+                if (isLoading) {
+                    loginButton.classList.add('btn-loading');
+                    loginText.textContent = 'Signing in...';
+                    loginIcon.classList.add('hidden');
+                    loadingSpinner.classList.remove('hidden');
+                    loginButton.disabled = true;
+                } else {
+                    loginButton.classList.remove('btn-loading');
+                    loginText.textContent = 'Sign In';
+                    loginIcon.classList.remove('hidden');
+                    loadingSpinner.classList.add('hidden');
+                    loginButton.disabled = false;
+                }
+            }
+            
+            // Simulate login API call
+            function simulateModalLogin(email, password) {
+                return new Promise((resolve) => {
+                    setTimeout(() => {
+                        // Demo credentials for testing
+                        if (email === 'demo@clearskies.com' && password === 'demo123') {
+                            resolve({ success: true, user: { email, name: 'Demo User' } });
+                        } else if (email === 'admin@clearskies.com' && password === 'admin123') {
+                            resolve({ success: true, user: { email, name: 'Admin User' } });
+                        } else {
+                            // For demo purposes, accept any valid email/password format
+                            resolve({ success: true, user: { email, name: 'User' } });
+                        }
+                    }, 2000);
+                });
+            }
+            
+            // Form submission
+            modalLoginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const formData = new FormData(modalLoginForm);
+                const email = formData.get('email').trim();
+                const password = formData.get('password').trim();
+                
+                // Validate form
+                const errors = validateModalForm(email, password);
+                if (errors.length > 0) {
+                    showModalMessage(errors[0], 'error');
+                    return;
+                }
+                
+                // Start loading state
+                setModalLoadingState(true);
+                
+                try {
+                    const result = await simulateModalLogin(email, password);
+                    
+                    if (result.success) {
+                        showModalMessage('Login successful! Welcome back!', 'success');
+                        
+                        // Store user data
+                        localStorage.setItem('clearskies_user', JSON.stringify(result.user));
+                        localStorage.setItem('clearskies_logged_in', 'true');
+                        
+                        // Close modal after success
+                        setTimeout(() => {
+                            closeModal();
+                            
+                            // Update login button to show user info
+                            updateLoginButtons(result.user);
+                            
+                            // Show welcome message on page
+                            showPageMessage(`Welcome back, ${result.user.name}!`, 'success');
+                        }, 1500);
+                    } else {
+                        throw new Error(result.message || 'Login failed');
+                    }
+                } catch (error) {
+                    showModalMessage(error.message || 'Login failed. Please try again.', 'error');
+                } finally {
+                    setModalLoadingState(false);
+                }
+            });
+            
+            // Social login handlers
+            document.querySelectorAll('.social-login-btn').forEach(button => {
+                button.addEventListener('click', () => {
+                    showModalMessage('Social login coming soon!', 'error');
+                });
+            });
+            
+            // Sign up link handler
+            document.getElementById('modal-signup-link').addEventListener('click', (e) => {
+                e.preventDefault();
+                showModalMessage('Registration page coming soon!', 'error');
+            });
+            
+            // Check if user is already logged in on page load
+            function checkAuthStatus() {
+                const isLoggedIn = localStorage.getItem('clearskies_logged_in') === 'true';
+                const userData = localStorage.getItem('clearskies_user');
+                
+                if (isLoggedIn && userData) {
+                    const user = JSON.parse(userData);
+                    updateLoginButtons(user);
+                }
+            }
+            
+            // Update login buttons to show user info when logged in
+            function updateLoginButtons(user) {
+                loginBtns.forEach(btn => {
+                    const icon = btn.querySelector('i');
+                    const textElement = btn.childNodes[btn.childNodes.length - 1];
+                    
+                    if (icon) icon.setAttribute('data-lucide', 'user-check');
+                    if (textElement && textElement.nodeType === Node.TEXT_NODE) {
+                        textElement.textContent = user.name || 'User';
+                    }
+                    
+                    // Add logout functionality
+                    btn.removeEventListener('click', openModal);
+                    btn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        handleLogout();
+                    });
+                    
+                    lucide.createIcons();
+                });
+            }
+            
+            // Handle logout
+            function handleLogout() {
+                localStorage.removeItem('clearskies_user');
+                localStorage.removeItem('clearskies_logged_in');
+                
+                showPageMessage('Logged out successfully!', 'success');
+                
+                // Reset login buttons
+                loginBtns.forEach(btn => {
+                    const icon = btn.querySelector('i');
+                    const textElement = btn.childNodes[btn.childNodes.length - 1];
+                    
+                    if (icon) icon.setAttribute('data-lucide', 'user');
+                    if (textElement && textElement.nodeType === Node.TEXT_NODE) {
+                        textElement.textContent = 'Login';
+                    }
+                    
+                    // Re-add login functionality
+                    btn.removeEventListener('click', handleLogout);
+                    btn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        openModal();
+                    });
+                    
+                    lucide.createIcons();
+                });
+            }
+            
+            // Show page-level messages
+            function showPageMessage(message, type = 'success') {
+                const messageEl = document.createElement('div');
+                messageEl.className = `fixed top-20 right-4 z-50 px-6 py-3 rounded-lg font-medium text-sm transition-all duration-300 transform translate-x-full`;
+                messageEl.textContent = message;
+                
+                if (type === 'success') {
+                    messageEl.classList.add('bg-emerald-500', 'text-white');
+                } else {
+                    messageEl.classList.add('bg-red-500', 'text-white');
+                }
+                
+                document.body.appendChild(messageEl);
+                
+                setTimeout(() => {
+                    messageEl.classList.remove('translate-x-full');
+                }, 100);
+                
+                setTimeout(() => {
+                    messageEl.classList.add('translate-x-full');
+                    setTimeout(() => messageEl.remove(), 300);
+                }, 3000);
+            }
+            
+            // Initialize auth status
+            checkAuthStatus();
+            
+            console.log('🚀 Enhanced login modal loaded successfully!');
+            console.log('Demo credentials: demo@clearskies.com / demo123');
+            console.log('Admin credentials: admin@clearskies.com / admin123');
+        });
+    </script>
+    
+    <script>
+        window.onload = function() {
+            // Initialize Lucide icons first
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+                console.log('✅ Lucide icons initialized');
+            } else {
+                console.warn('⚠️ Lucide not loaded');
+            }
+            
+            // --- NEW Navigation Bar Logic ---
+            const navbar = document.getElementById('navbar');
+            const mobileMenu = document.getElementById('mobile-menu');
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenuClose = document.getElementById('mobile-menu-close');
+
+            function closeMobileMenu() {
+                mobileMenu.classList.add('translate-x-full');
+                setTimeout(() => mobileMenu.classList.add('hidden'), 300);
+                mobileMenuButton.classList.remove('hamburger-active');
+            }
+
+            window.addEventListener('scroll', () => {
+                if (window.scrollY > 50) {
+                    navbar.classList.add('bg-black/50', 'top-0', 'w-full', 'rounded-none');
+                    navbar.classList.remove('top-6', 'w-[95%]', 'rounded-full');
+                } else {
+                    navbar.classList.remove('bg-black/50', 'top-0', 'w-full', 'rounded-none');
+                    navbar.classList.add('top-6', 'w-[95%]', 'rounded-full');
+                }
+            });
+
+            mobileMenuButton.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (mobileMenu.classList.contains('hidden')) {
+                    mobileMenu.classList.remove('hidden');
+                    setTimeout(() => mobileMenu.classList.remove('translate-x-full'), 10);
+                    mobileMenuButton.classList.add('hamburger-active');
+                } else {
+                    closeMobileMenu();
+                }
+            });
+
+            mobileMenuClose.addEventListener('click', (e) => {
+                e.stopPropagation();
+                closeMobileMenu();
+            });
+            
+            document.addEventListener('click', (e) => {
+                if (!navbar.contains(e.target) && !mobileMenu.classList.contains('hidden')) {
+                    closeMobileMenu();
+                }
+            });
+            
+            mobileMenu.addEventListener('click', (e) => {
+                if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON') {
+                    closeMobileMenu();
+                }
+            });
+
+            // --- 3D Background Setup & Animation ---
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('bg-canvas'), antialias: true, alpha: true });
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            camera.position.setZ(5);
+            const pointLight = new THREE.PointLight(0xffffff, 1.5);
+            pointLight.position.set(5, 5, 5);
+            scene.add(pointLight);
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+            scene.add(ambientLight);
+            const particleGeometry = new THREE.BufferGeometry();
+            const particleCount = 15000;
+            const positions = new Float32Array(particleCount * 3);
+            for (let i = 0; i < particleCount * 3; i++) { positions[i] = (Math.random() - 0.5) * 60; }
+            particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            const particleMaterial = new THREE.PointsMaterial({ color: 0xaaaaaa, size: 0.025, transparent: true, opacity: 0.7 });
+            const particles = new THREE.Points(particleGeometry, particleMaterial);
+            scene.add(particles);
+
+            // --- Parallax & Mouse Effect Logic ---
+            const mouse = new THREE.Vector2();
+            let scrollY = window.scrollY;
+
+            document.addEventListener('mousemove', (event) => {
+                mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+            });
+            
+            document.addEventListener('scroll', () => {
+                scrollY = window.scrollY;
+            });
+
+            const clock = new THREE.Clock();
+            function animate() {
+                requestAnimationFrame(animate);
+                
+                // Parallax effect on particles based on scroll
+                // The '0.05' value creates a smooth interpolation (lerp)
+                particles.position.y += (-scrollY * 0.05 - particles.position.y) * 0.05;
+
+                // Mouse move effect on camera
+                camera.position.x += (mouse.x * 0.5 - camera.position.x) * 0.05;
+                camera.position.y += (-mouse.y * 0.5 - camera.position.y) * 0.05;
+                camera.lookAt(scene.position);
+
+                particles.rotation.y += 0.0002;
+                renderer.render(scene, camera);
+            }
+            animate();
+            
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+
+            // --- Initial Load & Scroll Animations ---
+            gsap.registerPlugin(ScrollTrigger);
+            
+            // Reinitialize icons after animations
+            setTimeout(() => {
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            }, 1000);
+            
+            gsap.from("#hero > h2, #hero > p, #hero > div", { 
+                duration: 1, 
+                opacity: 0, 
+                y: 50, 
+                stagger: 0.2, 
+                delay: 0.5, 
+                ease: "power3.out" 
+            });
+        };
+    </script>
+    
+    <!-- Google Translate Script -->
+    <script type="text/javascript">
+        function googleTranslateElementInit() {
+            // Desktop version
+            new google.translate.TranslateElement({
+                pageLanguage: 'en',
+                includedLanguages: 'en,es,fr,de,it,pt,ru,zh,ja,ko,ar,hi',
+                layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+                autoDisplay: false
+            }, 'google_translate_element');
+            
+            // Mobile version
+            new google.translate.TranslateElement({
+                pageLanguage: 'en',
+                includedLanguages: 'en,es,fr,de,it,pt,ru,zh,ja,ko,ar,hi',
+                layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+                autoDisplay: false
+            }, 'google_translate_element_mobile');
+        }
+    </script>
+    <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+</body>
+</html>
