@@ -325,6 +325,27 @@
         .form-animation-delay-3 { animation-delay: 0.3s; }
         .form-animation-delay-4 { animation-delay: 0.4s; }
         .form-animation-delay-5 { animation-delay: 0.5s; }
+        /* Ensure mobile menu doesn't cause overflow and is scrollable */
+        #mobile-menu {
+            max-height: 100vh;
+            overflow-y: auto;
+        }
+
+        /* Hero section mobile adjustments */
+        @media (max-width: 768px) {
+            .content-section {
+                padding: 1.5rem;
+                min-height: auto;
+                padding-top: 6rem;
+            }
+            #hero h2 {
+                font-size: 2.5rem;
+                line-height: 1.2;
+            }
+            .glass-panel {
+                padding: 1.5rem;
+            }
+        }
     </style>
 </head>
 <body class="bg-gray-900 text-white">
@@ -349,8 +370,6 @@
                     <a href="features.html" class="px-4 py-2 text-gray-300 hover:text-emerald-400 transition-colors duration-300">Features</a>
                     <a href="how-it-works.html" class="px-4 py-2 text-gray-300 hover:text-emerald-400 transition-colors duration-300">How It Works</a>
                     <a href="contact.html" class="px-4 py-2 text-gray-300 hover:text-emerald-400 transition-colors duration-300">Contact</a>
-                    <div id="google_translate_element" class="ml-2"></div>
-                    
                 </div>
 
                 <!-- Mobile Menu Button -->
@@ -388,6 +407,10 @@
                         <i data-lucide="home" class="w-5 h-5 mr-3"></i>
                         <span>Home</span>
                     </a>
+                    <a href="dashboard.html" class="flex items-center py-3 px-4 text-gray-300 hover:text-emerald-400 hover:bg-gray-800/50 rounded-xl transition-all duration-200">
+                        <i data-lucide="bar-chart-3" class="w-5 h-5 mr-3"></i>
+                        <span>Dashboard</span>
+                    </a>
                     <a href="features.html" class="flex items-center py-3 px-4 text-gray-300 hover:text-emerald-400 hover:bg-gray-800/50 rounded-xl transition-all duration-200">
                         <i data-lucide="zap" class="w-5 h-5 mr-3"></i>
                         <span>Features</span>
@@ -395,10 +418,6 @@
                     <a href="how-it-works.html" class="flex items-center py-3 px-4 text-gray-300 hover:text-emerald-400 hover:bg-gray-800/50 rounded-xl transition-all duration-200">
                         <i data-lucide="info" class="w-5 h-5 mr-3"></i>
                         <span>How It Works</span>
-                    </a>
-                    <a href="dashboard.html" class="flex items-center py-3 px-4 text-gray-300 hover:text-emerald-400 hover:bg-gray-800/50 rounded-xl transition-all duration-200">
-                        <i data-lucide="bar-chart-3" class="w-5 h-5 mr-3"></i>
-                        <span>Dashboard</span>
                     </a>
                     <a href="contact.html" class="flex items-center py-3 px-4 text-gray-300 hover:text-emerald-400 hover:bg-gray-800/50 rounded-xl transition-all duration-200">
                         <i data-lucide="mail" class="w-5 h-5 mr-3"></i>
@@ -417,12 +436,6 @@
                         <i data-lucide="download" class="w-5 h-5 mr-2"></i>
                         <span>Install App</span>
                     </button>
-                </div>
-
-                <!-- Google Translate -->
-                <div class="border-t border-gray-700/50 pt-4">
-                    <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Language</h3>
-                    <div id="google_translate_element_mobile" class="mobile-translate"></div>
                 </div>
             </div>
         </div>
@@ -1358,27 +1371,5 @@
             });
         };
     </script>
-    
-    <!-- Google Translate Script -->
-    <script type="text/javascript">
-        function googleTranslateElementInit() {
-            // Desktop version
-            new google.translate.TranslateElement({
-                pageLanguage: 'en',
-                includedLanguages: 'en,es,fr,de,it,pt,ru,zh,ja,ko,ar,hi',
-                layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
-                autoDisplay: false
-            }, 'google_translate_element');
-            
-            // Mobile version
-            new google.translate.TranslateElement({
-                pageLanguage: 'en',
-                includedLanguages: 'en,es,fr,de,it,pt,ru,zh,ja,ko,ar,hi',
-                layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
-                autoDisplay: false
-            }, 'google_translate_element_mobile');
-        }
-    </script>
-    <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
 </body>
 </html>
