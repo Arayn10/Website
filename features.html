@@ -57,6 +57,28 @@
             opacity: 1; /* Changed from 0 to ensure visibility if JS fails */
             transform: translateY(0); /* Reset default transform */
         }
+
+        /* Ensure mobile menu doesn't cause overflow and is scrollable */
+        #mobile-menu {
+            max-height: 100vh;
+            overflow-y: auto;
+        }
+
+        /* Hero section mobile adjustments */
+        @media (max-width: 768px) {
+            .content-section {
+                padding: 1.5rem;
+                min-height: auto;
+                padding-top: 6rem;
+            }
+            #features h3 {
+                font-size: 2.25rem;
+                line-height: 1.2;
+            }
+            .glass-panel {
+                padding: 1.5rem;
+            }
+        }
     </style>
 </head>
 <body class="bg-gray-900 text-white">
@@ -80,7 +102,6 @@
                     <a href="features.html" class="px-4 py-2 text-emerald-400 font-bold transition-colors duration-300">Features</a>
                     <a href="how-it-works.html" class="px-4 py-2 text-gray-300 hover:text-emerald-400 transition-colors duration-300">How It Works</a>
                     <a href="contact.html" class="px-4 py-2 text-gray-300 hover:text-emerald-400 transition-colors duration-300">Contact</a>
-                    <div id="google_translate_element" class="ml-2"></div>
                 </div>
 
                 <!-- Mobile Menu Button -->
@@ -118,6 +139,10 @@
                         <i data-lucide="home" class="w-5 h-5 mr-3"></i>
                         <span>Home</span>
                     </a>
+                    <a href="dashboard.html" class="flex items-center py-3 px-4 text-gray-300 hover:text-emerald-400 hover:bg-gray-800/50 rounded-xl transition-all duration-200">
+                        <i data-lucide="bar-chart-3" class="w-5 h-5 mr-3"></i>
+                        <span>Dashboard</span>
+                    </a>
                     <a href="features.html" class="flex items-center py-3 px-4 text-emerald-400 font-semibold bg-emerald-500/10 rounded-xl transition-all duration-200">
                         <i data-lucide="zap" class="w-5 h-5 mr-3"></i>
                         <span>Features</span>
@@ -126,20 +151,10 @@
                         <i data-lucide="info" class="w-5 h-5 mr-3"></i>
                         <span>How It Works</span>
                     </a>
-                    <a href="dashboard.html" class="flex items-center py-3 px-4 text-gray-300 hover:text-emerald-400 hover:bg-gray-800/50 rounded-xl transition-all duration-200">
-                        <i data-lucide="bar-chart-3" class="w-5 h-5 mr-3"></i>
-                        <span>Dashboard</span>
-                    </a>
                     <a href="contact.html" class="flex items-center py-3 px-4 text-gray-300 hover:text-emerald-400 hover:bg-gray-800/50 rounded-xl transition-all duration-200">
                         <i data-lucide="mail" class="w-5 h-5 mr-3"></i>
                         <span>Contact</span>
                     </a>
-                </div>
-
-                <!-- Google Translate -->
-                <div class="border-t border-gray-700/50 pt-4">
-                    <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Language</h3>
-                    <div id="google_translate_element_mobile" class="mobile-translate"></div>
                 </div>
             </div>
         </div>
@@ -176,7 +191,7 @@
                         <p class="text-gray-300">The system analyzes real-time AQI levels to provide personalized health recommendations like wearing masks, staying indoors, or using air purifiers.</p>
                     </div>
                     <div class="flex flex-col items-center p-4 feature-card">
-                        <i data-lucide="bar chart-3" class="w-12 h-12 text-emerald-400 mb-4"></i>
+                        <i data-lucide="bar-chart-3" class="w-12 h-12 text-emerald-400 mb-4"></i>
                         <h4 class="text-xl font-bold mb-2">Cloud-Based Dashboard</h4>
                         <p class="text-gray-300">Access real-time data and insights from anywhere with our cloud-based dashboard, enabling informed decisions and efficient management.</p>
                     </div>
@@ -196,7 +211,7 @@
             const navbar = document.getElementById('navbar');
             const mobileMenu = document.getElementById('mobile-menu');
             const mobileMenuButton = document.getElementById('mobile-menu-button');
-            const closeMenuBtn = document.getElementById('close-menu-btn');
+            const mobileMenuClose = document.getElementById('mobile-menu-close');
 
             window.addEventListener('scroll', () => {
                 if (window.scrollY > 50) {
@@ -210,17 +225,26 @@
 
             mobileMenuButton?.addEventListener('click', (e) => {
                 e.stopPropagation();
-                mobileMenu.classList.add('show');
+                mobileMenu.classList.remove('hidden');
+                setTimeout(() => {
+                    mobileMenu.classList.add('show');
+                }, 10);
             });
             
-            closeMenuBtn?.addEventListener('click', () => {
+            mobileMenuClose?.addEventListener('click', () => {
                 mobileMenu.classList.remove('show');
+                setTimeout(() => {
+                    mobileMenu.classList.add('hidden');
+                }, 300);
             });
             
             // Close mobile menu when clicking outside
             document.addEventListener('click', (e) => {
                 if (!mobileMenu.contains(e.target) && !mobileMenuButton.contains(e.target)) {
                     mobileMenu.classList.remove('show');
+                    setTimeout(() => {
+                        mobileMenu.classList.add('hidden');
+                    }, 300);
                 }
             });
 
@@ -297,28 +321,5 @@
             });
         };
     </script>
-    
-    <!-- Google Translate Script -->
-    <script type="text/javascript">
-        function googleTranslateElementInit() {
-            // Desktop version
-            new google.translate.TranslateElement({
-                pageLanguage: 'en',
-                includedLanguages: 'en,es,fr,de,it,pt,ru,zh,ja,ko,ar,hi',
-                layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
-                autoDisplay: false
-            }, 'google_translate_element');
-            
-            // Mobile version
-            new google.translate.TranslateElement({
-                pageLanguage: 'en',
-                includedLanguages: 'en,es,fr,de,it,pt,ru,zh,ja,ko,ar,hi',
-                layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
-                autoDisplay: false
-            }, 'google_translate_element_mobile');
-        }
-    </script>
-    <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
-
 </body>
 </html>
